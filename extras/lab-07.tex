@@ -1,0 +1,76 @@
+\documentclass{tufte-handout}
+
+\usepackage{xcolor}
+
+% set image attributes:
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+
+% set hyperlink attributes
+\hypersetup{colorlinks}
+
+% set table attributes
+\usepackage{tabu}
+\usepackage{booktabs}
+
+% set list attributes:
+\usepackage{enumerate}
+\usepackage{enumitem}
+
+
+% ========================================================
+
+% define the title
+\title{SOC 4650/5650: Lab-07 - Weather Data Organization}
+\author{Christopher Prener, Ph.D.}
+\date{Spring 2019}
+% =======================================================
+\begin{document}
+% =======================================================
+\maketitle % generates the title
+% =======================================================
+
+\section{Directions}
+Using data from the \texttt{data/lab-07/} folder available in the \texttt{lecture-08} repository, create several maps using RStudio. Your entire project folder system should be uploaded to GitHub by Monday, March 11\textsuperscript{th} at 4:15pm.
+
+\vspace{5mm}
+\section{Analysis Development}
+The goal of this section is to create a self contained project directory with all of the data, code, map documents, results, and documentation a project needs.
+
+\begin{enumerate}[label=\alph*.]
+\item \textbf{Clone} the \texttt{lecture-07} repository if you have not already done so.
+\item Create a project folder system with all of the necessary components, and drag the lab data from \texttt{lecture-07/data/lab-07/} into your RStudio Project's \texttt{data/} subdirectory. Also add an ArcGIS Pro project to this same directory, and move the default geodatabase into your \texttt{data/} subdirectory.
+\item Create a \texttt{README.md} text file. Add a quick description of your project and outline the key directories and files that are included. 
+\item Create a well-formatted RMarkdown document for your data cleaning efforts.
+\item in RStudio, load the three pieces of raw data - \texttt{MO\_BOUNDARY\_Counties.shp}, \texttt{MO\_DEMOS\_CountyPop.shp}, and \texttt{MO\_DEMOS\_CountyDisability.csv}. 
+\end{enumerate}
+
+\vspace{5mm}
+\section{Part 1: Data Wrangling}
+\begin{enumerate}
+\item Begin by creating a pipeline in RStudio that takes the county disability data and:
+\begin{enumerate}
+\item Creates a new variable that adds the total values for \texttt{under50\_dis}, \texttt{btwn50\_99\_dis}, and \texttt{btwn100\_150\_dis} - this is the total number of people living with the county who have a disability and live between 0\% and 150\% of the poverty line.
+\item Removes all columns except the \texttt{GEOID} and the new variable you calculated.
+\end{enumerate}
+\item Next, remove the \texttt{NAME} column from the county population data and convert it from a \texttt{sf} object to a regular data frame.
+\item Then, join the county population and disability data together.
+\item After the data are joined, create a new variable that contains the the number of people per county who have a disability and live between 0\% and 150\% of the poverty line divided by the total number of people living in the county - the ratio of people we're particularly concerned about in in-climate weather to the total population of the county.
+\item At this point, there should be four columns in the data set in this order - \texttt{GEOID}, the new variable you created with the county of people in poverty who have a disability, the total population, and the ratio of those two variables. Re-order your columns if necessary.
+\item Remove all columns from the county shapefile data except the unique identification variable that matches the unique identification variable in the demographic data set you've created.
+\item Join the county geometry to the demographic data set.
+\item Calculate the square kilometers per county by getting the area of county from the \texttt{geometry} column and converting it from square meters to square kilometers.
+\item Write the data as a shapefile to your \texttt{data/} folder.
+\end{enumerate}
+
+\vspace{5mm}
+\section{Part 2: Geodatabase Creation}
+Add your new shapefile and as well as the metro weather event shapefiles for tornado and hail events to your ArcGIS Project's geodatabase in the \texttt{data/} subdirectory.
+
+\vspace{5mm}
+\section{Analysis Development Follow-up}
+Don't forget to knit your document when you are done! Also be sure to go back and update your \texttt{README.md} file with any changes to your project's organization or contents.
+
+
+% =======================================================
+\end{document}
