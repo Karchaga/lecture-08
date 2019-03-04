@@ -1,0 +1,190 @@
+---
+title: "Lecture-08 Examples"
+author: "Christopher Prener, Ph.D."
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+## Introduction
+This notebook provides additional examples of data cleaning plus new material on table joins and exporting data.
+
+## Dependencies
+This notebook requires a number of packages:
+
+```{r load-packages}
+# tidyverse packages
+library(dplyr)       # data wrangling
+library(readr)       # read/write tabular data
+library(stringr)     # work with strings
+library(tidyr)       # data wrangling
+
+# spatial packages
+library(janitor)     # data wrangling
+library(sf)          # spatial data tools
+
+# other packages
+library(here)        # file path management
+library(measurements) # measurement conversion
+```
+
+## Load Data
+This notebook requires three sets of data:
+
+```{r load-data}
+# missouri counties
+st_read(here("data", "example-data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), 
+                    stringsAsFactors = FALSE) %>%
+  st_transform(crs = 32615) -> counties
+
+# clean water act lakes
+lakes <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedLakes.csv"))
+
+# clean water act rivers/streams
+rivers <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedRiversStreams.csv"))
+```
+
+
+## Clean Data
+We're going to extend some of the data cleaning techniques we introduced last class, introducing them using the data on Clean Water Act listed lakes and then applying them to the Clean Water Act listed rivers data. Our goal is to create counts of listed bodies of water per county in Missouri.
+
+### Lakes Data
+First, we're going to get back to where we left off last week by obtaining counts of pollutants per lake. We're going to retain the county name as well, using `first(county_u_d)` in our `summarize()` call to get the county name from the first observation once the data are grouped: 
+
+```{r prep-lakes}
+lakes %>%
+  clean_names() %>%
+  distinct(water_body, pollutant, county_u_d, .keep_all = TRUE) %>%
+  group_by(water_body) %>% 
+  summarize(count = n(), county = first(county_u_d)) -> lakes
+
+lakes
+```
+
+Notice that `Clearwater Lake` contains two county names separated by a forward slash (i.e. `/`). This is a problem - we need pristine county names for our join later on. We can split these into two values in what is known as a "list-column". These are used by `sf`, for example, to store the geometry data:
+
+```{r list-col-geometry}
+
+```
+
+We can create a new list-col by using the `stringr` package's `str_split()` function, which will remove any forward slashes that are found and convert `Wayne/Reynolds` into `c("Wayne", "Reynolds")`. This creates, in essence, an object within an object:
+
+```{r illustrate-list-col}
+
+```
+
+It is better explored by viewing the data.
+
+Once we have our list-col, we can convert each element of `county` into its on row using the `tidyr` package's `unnest()` function:
+
+```{r illustrate-unnest}
+
+```
+
+Notice how we now have two rows for `Clearwater Lake` - one for `Wayne` and one for `Reynolds`. This is perfect - it converts our observational unit from "lake" to "lake per county".
+
+Another thing to notice is that we have multiple entries for St. Charles county. This is true for other counties as well. We can create counts-per-county in the same way we made our initial counts per lake. We'll: 
+
+1. split the data, **then** 
+2. use `unnest()` to parse out our list-cols, **then**
+3. group by `county`, **then**
+4. summarize to create a new variable named `lakes` with a count of lakes and a new variable named `lakes_avg` that has the average number of pollutants per body of water, **and**
+5. assign the data to a new object named `lakesByCounty`.
+
+```{r clean-lakes-2}
+
+```
+
+Perfect!
+
+### River Data
+Now, lets replicate the process on the rivers data. We need to:
+
+1. Clean the variable names en masse, **then**
+2. Get distinct combinations of bodies of water, pollutants, and counties (since rivers often cross multiple counties), **then**
+3. Group the data by body of water, **then**
+4. Calculate counts of pollutants per body of water and retain the county name, **then**
+5. Split counties that contain a forward slash, **then**
+6. Unnest our list-cols, **then**
+7, Group by county, **then**,
+8. Calculate counts of rivers per county as well as the average number of pollutants per river, **and**
+9. Store the data in a new object called `riversByCounty`
+
+```{r clean-rivers}
+
+```
+
+## Joins
+Now that we have our counts per county for both the lakes and rivers data, we want to combine them with the `counties` data. First, we want to subset our columns. We also want to make sure our identification variable contains no duplicates:
+
+```{r identify-duplicate-counties}
+# convert to data frame
+
+
+# check for duplicates in id variable
+
+```
+
+We have two duplicate observations - the `NAME` variable contains `St. Louis` twice, once for the city and once for the county. We'll go ahead and rename the city's instance of `NAME` to `St. Louis City`, to match how it appears in the EPA data.
+
+```{r prepare-counties}
+
+```
+
+Now, we're ready to join our data. We'll use the `dplyr` `left_join()` function because it ensures we only have observations for areas we have valid geometry for. The `sf` object (in this case `counties`) should always go in the `x` or "lefthand" position:
+
+```{r join-lakes-to-counties}
+
+```
+
+Once we have those data combined, we can also add our rivers data in the same manner.
+
+```{r join-rivers-to-counties}
+
+```
+
+## Clean-up
+With our data combined, we have a little bit more cleaning to do:
+
+1. First, we replace zeros in `lakes` and `rivers` and add `ALAND` and `AWATER` together into a new variable named `area, **then**
+2. We remove `ALAND` and `AWATER`, **then**
+3. We rename `COUNTYFP` to `county` and `NAME` to `name`, **then**
+4. We convert the units of `area` from square meters to kilometers squared, **and**
+5. We assign our changes to the `counties` object.
+
+```{r clean-up}
+
+```
+
+The `conv_unit()` function takes any numeric variable and will convert it from a given unit to a given unit. Use `?conv_unit` to get a full listing of units contained in the package. For our purposes, we're typically interested in the length and area measurements:
+
+* area - nm2, um2, mm2, cm2, m2, hectare, km2, inch2, ft2, yd2, acre, mi2, naut_mi2
+* length - angstrom, nm, um, mm, cm, dm, m, km, inch, ft, yd, fathom, mi, naut_mi, au, light_yr, parsec, point
+
+A second option for calculating area is to use the `geometry` itself:
+
+```{r calculate-area-again}
+
+```
+
+Notice the differences between `area` and `area2` - this could be due to measurement error on the part of the Census Bureau, or to the fact that we're using a different projection system to calculate area than they did.
+
+## Write Data
+Finally, we want to go ahead and write our data in a variety of formats. First up, `.csv` format:
+
+```{r write-csv}
+
+```
+
+Next, we can write our data to a shapefile (`.shp`) format:
+
+```{r write-shp}
+
+```
+
+Finally, we can write our data to a `.geoJSON` format if we want them to appear in GitHub as an interactive map:
+
+```{r write-geoJSON}
+
+```
