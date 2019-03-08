@@ -1,5 +1,6 @@
 # dependencies
 library(dplyr)
+library(readr)
 library(sf)
 library(tidycensus)
 library(tigris)
@@ -40,7 +41,9 @@ get_acs(state = 29, geography = "county", variable = "B01003_001") %>%
 mo %>%
   select(GEOID) %>%
   left_join(., totalPop, by = "GEOID") %>%
-  st_write("data/lab-07/MO_DEMOS_CountyPop/MO_DEMOS_CountyPop.shp")
+  st_write("data/lab-07/MO_DEMOS_CountyPop/MO_DEMOS_CountyPop.shp", delete_dsn = TRUE)
 
 # write counties to lab data
+st_geometry(mo) <- NULL
+
 write_csv(mo, "data/lab-07/MO_DEMOS_CountyDisability/MO_DEMOS_CountyDisability.csv")
