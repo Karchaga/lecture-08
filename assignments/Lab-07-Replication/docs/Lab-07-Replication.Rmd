@@ -1,0 +1,128 @@
+---
+title: "Lab-07-Replication"
+author: "Branson Fox"
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+## Introduction
+This notebook replicates the results of lab 07.
+
+## Dependencies
+This notebook requires the following packages to load, clean and export our data.
+
+```{r load-packages}
+# tidyverse packages
+library(readr) # import tabular data
+library(dplyr) # data manipulation
+
+# other packages
+library(here) # file path management
+library(sf)   # methods for spatial data
+library(measurements) # unit conversion
+```
+
+## Load Data
+This notebook requires three pieces of raw data from the lecture 08 repository.
+
+```{r load-data}
+# spatial data
+counties <- st_read(here("data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), stringsAsFactors = FALSE)
+countyPop <- st_read(here("data", "MO_DEMOS_CountyPop", "MO_DEMOS_CountyPop.shp"), stringsAsFactors = FALSE)
+
+# tabular data
+countyDisability <- read_csv(here("data", "MO_DEMOS_CountyDisability/MO_DEMOS_CountyDisability.csv"))
+```
+
+## Part 1: Data Wrangling
+### Question 1
+We'll begin by creating a new variable that adds together rates of disability by poverty to find the total rate of disability between 0 and 150% of the poverty line.
+```{r p1-q1}
+countyDisability %>%
+  mutate(
+    TotalDisability =  under50_dis + btwn50_99_dis + btwn100_150_dis
+  ) %>%
+  select(GEOID, TotalDisability) -> countyDisability
+```
+
+### Question 2
+Now, we'll remove the `NAME` column from the county population data and convert it to a data.frame.
+```{r p1-q2}
+countyPop <- select(countyPop, -NAME)
+```
+
+First, observe that it is of class sf:
+```{r q2 sf}
+class(countyPop)
+```
+
+Now, to remove the geometry:
+```{r q2 rm geo}
+st_geometry(countyPop) <- NULL
+```
+
+Now, see that it is no longer of class `sf`
+```{r q2 sf2}
+class(countyPop)
+```
+
+### Question 3
+Next, we'll join the county population and disability data. Because of the way a shapefile and csv are read in differently, we need to change the character format of countyPop GEOID to be numeric.
+```{r p1-q3}
+# change variable class
+countyPop <- mutate(countyPop, GEOID = as.numeric(GEOID))
+# then to join as usual
+countyFull <- left_join(countyDisability, countyPop, by = "GEOID")
+```
+
+### Question 4
+Next, we'll calculate the proportion of the county that has a dissability and is between 0 and 150% of the poverty line out of the total county population.
+```{r p1-q4}
+countyFull <- mutate(countyFull,
+                     disProp = TotalDisability/totalPop)
+```
+
+### Question 5
+Our data is in the correct order now, but if you need to rearrange the order of variables, use the `select()` function and manually rearrange them.
+```{r p1-q5}
+countyFull <- select(countyFull, GEOID, TotalDisability, totalPop, disProp)
+```
+
+### Question 6
+Now, we want to remove all of the columns from the county data except for `GEOID` variable we can join by. Remember that sf geometries are "sticky" or in other words they will remain unless explicitly dropped.
+```{r p1-q6}
+counties <- select(counties, GEOID)
+```
+
+### Question 7
+Now, we will join our `countyFull` data with `counties`. Once again, we will change the GEOID from character to numeric in order to match.
+```{r p1-q7}
+# change class of GEOID
+counties <- mutate(counties, GEOID = as.numeric(GEOID))
+# join as usual
+countyFull <- left_join(counties, countyFull, by = "GEOID")
+```
+
+### Question 8
+The last modification we'll make to the data is calculating the square kilometer area per county. First we use `st_area()` to get the area in square meters. We have to force to numeric using `as.numeric()` or else there will be trouble converting later. Then, we use the `conv_unit()` function from `measurements` to convert this to square km.
+```{r p1-q8}
+# to get area from geometry
+countyFull <- mutate(countyFull, area = as.numeric(st_area(geometry)))
+# then to convert to square km
+countyFull <- mutate(countyFull, area = conv_unit(area, "m2", "km2"))
+```
+
+### Question 9
+Finally, we will write the cleaned data as a shapefile to the `data/` folder. In this example, we created a new folder called `MO_CountyDisabilityTotal` as a subfolder of `data/`.
+```{r p1-q9}
+# an example of creating a folder by R code
+dir.create(here("data", "MO_CountyDisabilityTotal"))
+# then regular saving of our data
+st_write(countyFull, here("data", "MO_CountyDisabilityTotal", "MO_CountyDisabilityTotal.shp"))
+```
+
+## Part 2: Geodatabase Creation
+
+This part of the lab is completed in ArcGIS Pro.

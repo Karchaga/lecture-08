@@ -44,6 +44,6 @@ mo %>%
   st_write("data/lab-07/MO_DEMOS_CountyPop/MO_DEMOS_CountyPop.shp", delete_dsn = TRUE)
 
 # write counties to lab data
-st_geometry(mo) <- NULL
+st_geometry(disability) <- NULL
 
-write_csv(mo, "data/lab-07/MO_DEMOS_CountyDisability/MO_DEMOS_CountyDisability.csv")
+write_csv(disability, "data/lab-07/MO_DEMOS_CountyDisability/MO_DEMOS_CountyDisability.csv")
