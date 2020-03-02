@@ -1,7 +1,7 @@
 Lecture-08 Examples
 ================
 Christopher Prener, Ph.D.
-(March 04, 2019)
+(March 02, 2020)
 
 ## Introduction
 
@@ -35,17 +35,27 @@ library(tidyr)       # data wrangling
 
 # spatial packages
 library(janitor)     # data wrangling
+```
+
+    ## 
+    ## Attaching package: 'janitor'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     chisq.test, fisher.test
+
+``` r
 library(sf)          # spatial data tools
 ```
 
-    ## Linking to GEOS 3.6.1, GDAL 2.1.3, PROJ 4.9.3
+    ## Linking to GEOS 3.7.2, GDAL 2.4.2, PROJ 5.2.0
 
 ``` r
 # other packages
 library(here)        # file path management
 ```
 
-    ## here() starts at /Users/chris/GitHub/SOC5650/LectureRepos/lecture-08
+    ## here() starts at /Users/prenercg/GitHub/slu-soc5650/lecture-08/examples
 
 ``` r
 library(measurements) # measurement conversion
@@ -57,22 +67,22 @@ This notebook requires three sets of data:
 
 ``` r
 # missouri counties
-st_read(here("data", "example-data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), 
+st_read(here("data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), 
                     stringsAsFactors = FALSE) %>%
   st_transform(crs = 32615) -> counties
 ```
 
-    ## Reading layer `MO_BOUNDARY_Counties' from data source `/Users/chris/GitHub/SOC5650/LectureRepos/lecture-08/data/example-data/MO_BOUNDARY_Counties/MO_BOUNDARY_Counties.shp' using driver `ESRI Shapefile'
+    ## Reading layer `MO_BOUNDARY_Counties' from data source `/Users/prenercg/GitHub/slu-soc5650/lecture-08/examples/data/MO_BOUNDARY_Counties/MO_BOUNDARY_Counties.shp' using driver `ESRI Shapefile'
     ## Simple feature collection with 115 features and 17 fields
     ## geometry type:  POLYGON
     ## dimension:      XY
     ## bbox:           xmin: -95.7747 ymin: 35.99568 xmax: -89.09897 ymax: 40.61364
     ## epsg (SRID):    4269
-    ## proj4string:    +proj=longlat +datum=NAD83 +no_defs
+    ## proj4string:    +proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs
 
 ``` r
 # clean water act lakes
-lakes <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedLakes.csv"))
+lakes <- read_csv(here("data", "MO_HYDRO_ImpairedLakes.csv"))
 ```
 
     ## Parsed with column specification:
@@ -99,7 +109,7 @@ lakes <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedLakes.csv"))
 
 ``` r
 # clean water act rivers/streams
-rivers <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedRiversStreams.csv"))
+rivers <- read_csv(here("data", "MO_HYDRO_ImpairedRiversStreams.csv"))
 ```
 
     ## Parsed with column specification:
@@ -231,6 +241,9 @@ lakes %>%
   unnest()
 ```
 
+    ## Warning: `cols` is now required.
+    ## Please use `cols = c(county)`
+
     ## # A tibble: 56 x 3
     ##    water_body                 count county     
     ##    <chr>                      <int> <chr>      
@@ -273,7 +286,12 @@ lakes %>%
   summarise(
     lakes = n(), 
     lakes_avg = mean(count)) -> lakesByCounty
+```
 
+    ## Warning: `cols` is now required.
+    ## Please use `cols = c(county)`
+
+``` r
 lakesByCounty
 ```
 
@@ -326,6 +344,9 @@ rivers %>%
   summarise(rivers = n(), rivers_avg = mean(count)) -> riversByCounty
 ```
 
+    ## Warning: `cols` is now required.
+    ## Please use `cols = c(county)`
+
 ## Joins
 
 Now that we have our counts per county for both the lakes and rivers
@@ -344,13 +365,12 @@ counties_df %>%
 ```
 
     ## # A tibble: 2 x 18
-    ##   NAME  dupe_count STATEFP COUNTYFP COUNTYNS GEOID NAMELSAD LSAD  CLASSFP
-    ##   <chr>      <int> <chr>   <chr>    <chr>    <chr> <chr>    <chr> <chr>  
-    ## 1 St. …          2 29      189      00758549 29189 St. Lou… 06    H1     
-    ## 2 St. …          2 29      510      00767557 29510 St. Lou… 25    C7     
-    ## # … with 9 more variables: MTFCC <chr>, CSAFP <chr>, CBSAFP <chr>,
-    ## #   METDIVFP <chr>, FUNCSTAT <chr>, ALAND <chr>, AWATER <chr>,
-    ## #   INTPTLAT <chr>, INTPTLON <chr>
+    ##   NAME  dupe_count STATEFP COUNTYFP COUNTYNS GEOID NAMELSAD LSAD  CLASSFP MTFCC
+    ##   <chr>      <int> <chr>   <chr>    <chr>    <chr> <chr>    <chr> <chr>   <chr>
+    ## 1 St. …          2 29      189      00758549 29189 St. Lou… 06    H1      G4020
+    ## 2 St. …          2 29      510      00767557 29510 St. Lou… 25    C7      G4020
+    ## # … with 8 more variables: CSAFP <chr>, CBSAFP <chr>, METDIVFP <chr>,
+    ## #   FUNCSTAT <chr>, ALAND <chr>, AWATER <chr>, INTPTLAT <chr>, INTPTLON <chr>
 
 We have two duplicate observations - the `NAME` variable contains `St.
 Louis` twice, once for the city and once for the county. We’ll go ahead
@@ -460,22 +480,20 @@ First up, `.csv`
 format:
 
 ``` r
-write_csv(counties, here("data", "example-data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.csv"))
+write_csv(counties, here("data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.csv"))
 ```
 
 Next, we can write our data to a shapefile (`.shp`)
 format:
 
 ``` r
-st_write(counties, here("data", "example-data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.shp"), 
+st_write(counties, here("data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.shp"), 
          delete_dsn = TRUE)
 ```
 
-    ## Deleting source `/Users/chris/GitHub/SOC5650/LectureRepos/lecture-08/data/example-data/MO_HYDRO_PolByCounty/MO_HYDRO_PolByCounty.shp' using driver `ESRI Shapefile'
-    ## Writing layer `MO_HYDRO_PolByCounty' to data source `/Users/chris/GitHub/SOC5650/LectureRepos/lecture-08/data/example-data/MO_HYDRO_PolByCounty/MO_HYDRO_PolByCounty.shp' using driver `ESRI Shapefile'
-    ## features:       115
-    ## fields:         7
-    ## geometry type:  Polygon
+    ## Deleting source `/Users/prenercg/GitHub/slu-soc5650/lecture-08/examples/data/MO_HYDRO_PolByCounty/MO_HYDRO_PolByCounty.shp' using driver `ESRI Shapefile'
+    ## Writing layer `MO_HYDRO_PolByCounty' to data source `/Users/prenercg/GitHub/slu-soc5650/lecture-08/examples/data/MO_HYDRO_PolByCounty/MO_HYDRO_PolByCounty.shp' using driver `ESRI Shapefile'
+    ## Writing 115 features with 7 fields and geometry type Polygon.
 
 Finally, we can write our data to a `.geoJSON` format if we want them to
 appear in GitHub as an interactive map:
@@ -483,12 +501,10 @@ appear in GitHub as an interactive map:
 ``` r
 counties %>%
   st_transform(crs = 4326) %>%
-  st_write(here("data", "example-data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.geoJSON"),
+  st_write(here("data", "MO_HYDRO_PolByCounty.geoJSON"),
            delete_dsn = TRUE)
 ```
 
-    ## Deleting source `/Users/chris/GitHub/SOC5650/LectureRepos/lecture-08/data/example-data/MO_HYDRO_PolByCounty/MO_HYDRO_PolByCounty.geoJSON' using driver `GeoJSON'
-    ## Writing layer `MO_HYDRO_PolByCounty' to data source `/Users/chris/GitHub/SOC5650/LectureRepos/lecture-08/data/example-data/MO_HYDRO_PolByCounty/MO_HYDRO_PolByCounty.geoJSON' using driver `GeoJSON'
-    ## features:       115
-    ## fields:         7
-    ## geometry type:  Polygon
+    ## Deleting source `/Users/prenercg/GitHub/slu-soc5650/lecture-08/examples/data/MO_HYDRO_PolByCounty.geoJSON' using driver `GeoJSON'
+    ## Writing layer `MO_HYDRO_PolByCounty' to data source `/Users/prenercg/GitHub/slu-soc5650/lecture-08/examples/data/MO_HYDRO_PolByCounty.geoJSON' using driver `GeoJSON'
+    ## Writing 115 features with 7 fields and geometry type Polygon.

@@ -34,15 +34,15 @@ This notebook requires three sets of data:
 
 ```{r load-data}
 # missouri counties
-st_read(here("data", "example-data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), 
+st_read(here("data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), 
                     stringsAsFactors = FALSE) %>%
   st_transform(crs = 32615) -> counties
 
 # clean water act lakes
-lakes <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedLakes.csv"))
+lakes <- read_csv(here("data", "MO_HYDRO_ImpairedLakes.csv"))
 
 # clean water act rivers/streams
-rivers <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedRiversStreams.csv"))
+rivers <- read_csv(here("data", "MO_HYDRO_ImpairedRiversStreams.csv"))
 ```
 
 
@@ -213,13 +213,13 @@ Notice the differences between `area` and `area2` - this could be due to measure
 Finally, we want to go ahead and write our data in a variety of formats. First up, `.csv` format:
 
 ```{r write-csv}
-write_csv(counties, here("data", "example-data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.csv"))
+write_csv(counties, here("data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.csv"))
 ```
 
 Next, we can write our data to a shapefile (`.shp`) format:
 
 ```{r write-shp}
-st_write(counties, here("data", "example-data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.shp"), 
+st_write(counties, here("data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.shp"), 
          delete_dsn = TRUE)
 ```
 
@@ -228,14 +228,14 @@ Finally, we can write our data to a `.geoJSON` format if we want them to appear 
 ```{r write-geoJSON}
 counties %>%
   st_transform(crs = 4326) %>%
-  st_write(here("data", "example-data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.geoJSON"),
+  st_write(here("data", "MO_HYDRO_PolByCounty.geoJSON"),
            delete_dsn = TRUE)
 ```
 
 
 ```{r move-to-docs, include=FALSE}
 # you do need to include this in any notebook you create for this class
-fs::file_copy(here::here("examples", "lecture-08-complete.nb.html"), 
-              here::here("docs", "index.nb.html"), 
+fs::file_copy(here::here("docs", "lecture-08-complete.nb.html"), 
+              "../docs/index.nb.html", 
               overwrite = TRUE)
 ```

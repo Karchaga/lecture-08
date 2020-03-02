@@ -34,15 +34,15 @@ This notebook requires three sets of data:
 
 ```{r load-data}
 # missouri counties
-st_read(here("data", "example-data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), 
+st_read(here("data", "MO_BOUNDARY_Counties", "MO_BOUNDARY_Counties.shp"), 
                     stringsAsFactors = FALSE) %>%
   st_transform(crs = 32615) -> counties
 
 # clean water act lakes
-lakes <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedLakes.csv"))
+lakes <- read_csv(here("data", "MO_HYDRO_ImpairedLakes.csv"))
 
 # clean water act rivers/streams
-rivers <- read_csv(here("data", "example-data", "MO_HYDRO_ImpairedRiversStreams.csv"))
+rivers <- read_csv(here("data", "MO_HYDRO_ImpairedRiversStreams.csv"))
 ```
 
 
