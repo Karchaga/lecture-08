@@ -63,16 +63,19 @@ lakes
 ```
 
 Notice that `Clearwater Lake` contains two county names separated by a forward slash (i.e. `/`). This is a problem - we need pristine county names for our join later on. We can split these into two values in what is known as a "list-column". These are used by `sf`, for example, to store the geometry data:
-
 ```{r list-col-geometry}
-counties %>%
-  select(geometry)
+mutate(lakes, county = str_split(string = county ,
+                                 patter = "/"))
 ```
 
 We can create a new list-col by using the `stringr` package's `str_split()` function, which will remove any forward slashes that are found and convert `Wayne/Reynolds` into `c("Wayne", "Reynolds")`. This creates, in essence, an object within an object:
 
 ```{r illustrate-list-col}
-mutate(lakes, county = str_split(string = county, pattern = "/"))
+lakes %>%
+  mutate(county = str_split(string = county,
+                            patter = "/")) %>%
+  unnest()
+
 ```
 
 It is better explored by viewing the data.
@@ -97,14 +100,17 @@ Another thing to notice is that we have multiple entries for St. Charles county.
 
 ```{r clean-lakes-2}
 lakes %>%
-  mutate(county = str_split(string = county, pattern = "/")) %>%
-  unnest() %>%
+  mutate(county = str_split(string = county,
+                            patter = "/")) %>%
+  unnest(cols = "county") %>%
   group_by(county) %>%
-  summarise(
+  summarize(
     lakes = n(), 
     lakes_avg = mean(count)) -> lakesByCounty
 
-lakesByCounty
+
+
+    
 ```
 
 Perfect!
@@ -131,7 +137,7 @@ rivers %>%
     count = n(), 
     county = first(county_u_d)) %>%
   mutate(county = str_split(string = county, pattern = "/")) %>%
-  unnest() %>%
+  unnest(cols = "county") %>%
   group_by(county) %>%
   summarise(rivers = n(), rivers_avg = mean(count)) -> riversByCounty
 ```
@@ -143,6 +149,9 @@ Now that we have our counts per county for both the lakes and rivers data, we wa
 # convert to data frame
 counties_df <- counties
 st_geometry(counties_df) <- NULL
+###-this will get rid of the geometry in the data for this specific variable-###
+
+
 
 # check for duplicates in id variable
 counties_df %>%
@@ -161,6 +170,7 @@ Now, we're ready to join our data. We'll use the `dplyr` `left_join()` function 
 
 ```{r join-lakes-to-counties}
 counties <- left_join(counties, lakesByCounty, by = c("NAME" = "county"))
+###-for this case, the counties variable will go on the left because is the variable that contains the geometric data-###
 ```
 
 Once we have those data combined, we can also add our rivers data in the same manner.
@@ -221,6 +231,8 @@ Next, we can write our data to a shapefile (`.shp`) format:
 ```{r write-shp}
 st_write(counties, here("data", "MO_HYDRO_PolByCounty", "MO_HYDRO_PolByCounty.shp"), 
          delete_dsn = TRUE)
+
+###-the dsn at the end deletes current version of data that exist before storing new data-###
 ```
 
 Finally, we can write our data to a `.geoJSON` format if we want them to appear in GitHub as an interactive map:
